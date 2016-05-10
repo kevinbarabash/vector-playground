@@ -1,0 +1,97 @@
+// http://pegjs.org/online
+
+start
+    = expression
+
+expression
+    = head:term tail:(_ [+-] _ term)* {
+        const result = [head];
+        tail.forEach(x => {
+            const y = x.filter(i => !/^[ ]*$/.test(i));
+            result.push(...y);
+        });
+        return result;
+    }
+
+term
+    = head:power tail:(_ '*' _ power)+ {
+        const result = [head];
+        tail.forEach(x => {
+            const y = x.filter(i => !/^[ ]*$/.test(i));
+            result.push(...y);
+        });
+        return result;
+    }
+    / power
+
+power
+    = base:factor '^' exponent:factor {
+        return {
+            type: 'POWER',
+            base: base,
+            exponent: exponent,
+        };
+    }
+    / factor
+
+factor
+    = atom
+    / sign:'-'? '(' expression:expression ')' {
+        if (sign) {
+            return {
+                type: 'NEGATION',
+                value: expression,
+            };
+        } else {
+            return expression;
+        }
+    }
+
+atom
+    = number:number {
+        return {
+            type: 'NUMBER',
+            value: number,
+        };
+    }
+    / identifier
+
+identifier
+    = sign:'-'? chars:[a-zA-Z]+ {
+        const result = {
+            type: 'IDENTIFIER',
+            name: chars.join(''),
+        };
+        if (sign) {
+            return {
+                type: 'NEGATION',
+                value: result,
+            };
+        } else {
+            return result;
+        }
+    }
+
+// decimal
+number_frac
+    = "." chars:[0-9]*
+        { return "." + chars.join(''); }
+
+number
+    = sign:'-'? chars:[0-9]+ frac:number_frac? {
+        var result = sign ? sign : '' + chars.join('');
+
+        if (frac) {
+            result += frac;
+        }
+
+        return result;
+    }
+    / sign: '-'? "." chars:[0-9]+ {
+        return (sign ? sign : '') + '.' + chars.join('');
+    }
+
+_ "whitespace"
+    = chars:[ \t\n\r]* {
+        return chars.join('');
+    }
