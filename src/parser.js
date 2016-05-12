@@ -1,10 +1,8 @@
-const fs = require('fs');
 const PEG = require("pegjs");
+const grammar = require("raw!./grammar.peg");
 
 
-const code = fs.readFileSync('./grammar.peg', { encoding: 'utf-8' });
-
-const parser = PEG.buildParser(code);
+const parser = PEG.buildParser(grammar);
 
 const tree = parser.parse('1 + 2 * (3.002^-2 - a^-(b*c)) - -.9/d + a/b*c/d');
 
