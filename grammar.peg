@@ -1,26 +1,86 @@
 // http://pegjs.org/online
 
 start
-    = expression
+    = equation
+
+equation
+    = left:expression _ '=' _ right:expression {
+        return {
+            type: 'EQUATION',
+            left: left,
+            right: right,
+        };
+    }
+    / expression
 
 expression
-    = head:term tail:(_ [+-] _ term)* {
-        const result = [head];
+    = head:product tail:(_ plusMinusOp _ product)+ {
+        const children = [head];
         tail.forEach(x => {
             const y = x.filter(i => !/^[ ]*$/.test(i));
-            result.push(...y);
+            children.push(...y);
         });
-        return result;
+
+        return {
+            type: 'EXPRESSION',
+            children: children,
+        };
+    }
+    / product
+
+plusMinusOp
+    = op:[+-] {
+        return {
+            type: 'OPERATOR',
+            operator: op,
+        };
     }
 
-term
-    = head:power tail:(_ '*' _ power)+ {
-        const result = [head];
+product
+    = head:fraction tail:(_ mulOp _ fraction)+ {
+        const children = [head];
         tail.forEach(x => {
             const y = x.filter(i => !/^[ ]*$/.test(i));
-            result.push(...y);
+            children.push(...y);
         });
-        return result;
+
+        return {
+            type: 'PRODUCT',
+            children: children,
+        };
+    }
+    / head:(number / identifier) tail:(identifier)+ {
+        const children = [head];
+        tail.forEach((factor) => {
+            children.push({
+                type: 'OPERATOR',
+                value: '*',
+            });
+            children.push(factor);
+        });
+
+        return {
+            type: 'PRODUCT',
+            children: children,
+        };
+    }
+    / fraction
+
+mulOp
+    = '*' {
+        return {
+            type: 'OPERATOR',
+            operator: '*',
+        };
+    }
+
+fraction
+    = numerator:factor '/' denominator:factor {
+        return {
+            type: 'FRACTION',
+            numerator: numerator,
+            denominator: denominator,
+        };
     }
     / power
 
@@ -48,19 +108,29 @@ factor
     }
 
 atom
-    = number:number {
-        return {
-            type: 'NUMBER',
-            value: number,
-        };
-    }
+    = number
+    / tuple
     / identifier
 
+tuple
+    = '(' head:expression tail:(',' _ expression)+ ')' {
+        const values = [head];
+        tail.forEach(x => {
+            const y = x.filter(i => !/^[ ]*$/.test(i) || i === ',');
+            values.push(...y);
+        });
+
+        return {
+            type: 'TUPLE',
+            values: values,
+        };
+    }
+
 identifier
-    = sign:'-'? chars:[a-zA-Z]+ {
+    = sign:'-'? char:[a-zA-Z] {
         const result = {
             type: 'IDENTIFIER',
-            name: chars.join(''),
+            name: char,
         };
         if (sign) {
             return {
@@ -79,16 +149,24 @@ number_frac
 
 number
     = sign:'-'? chars:[0-9]+ frac:number_frac? {
-        var result = sign ? sign : '' + chars.join('');
+        var value = sign ? sign : '' + chars.join('');
 
         if (frac) {
-            result += frac;
+            value += frac;
         }
 
-        return result;
+        return {
+            type: 'NUMBER',
+            value: value,
+        };
     }
     / sign: '-'? "." chars:[0-9]+ {
-        return (sign ? sign : '') + '.' + chars.join('');
+        const value = (sign ? sign : '') + '.' + chars.join('');
+
+        return {
+            type: 'NUMBER',
+            value: value,
+        };
     }
 
 _ "whitespace"
