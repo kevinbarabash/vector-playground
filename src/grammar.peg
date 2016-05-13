@@ -116,7 +116,7 @@ tuple
     = '(' head:expression tail:(',' _ expression)+ ')' {
         const values = [head];
         tail.forEach(x => {
-            const y = x.filter(i => !/^[ ]*$/.test(i) || i === ',');
+            const y = x.filter(i => !/^[ ]*$/.test(i) && i !== ',');
             values.push(...y);
         });
 
