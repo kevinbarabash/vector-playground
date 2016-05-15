@@ -22,8 +22,11 @@ module.exports = {
     module: {
         loaders: [{
             test: /\.jsx?$/,
-            loaders: ['babel'],
+            loaders: ['babel-loader'],
             include: path.join(__dirname, 'src')
-        }]
+        }, {
+            test: /\.json$/,
+            loaders: ['json-loader'],
+        }],
     },
 };

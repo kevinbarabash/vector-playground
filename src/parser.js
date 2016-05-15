@@ -1,6 +1,7 @@
-const PEG = require("pegjs");
-const grammar = require("raw!./grammar.peg");
-
+const PEG = require('pegjs');
+const grammar = require('raw!./grammar.peg');
+const plugin = require('babel-plugin-operator-overloading');
+const operator = require('define-operator').operator;
 
 const parser = PEG.buildParser(grammar);
 
@@ -40,6 +41,7 @@ class Tuple {
         this.values = values;
     }
 
+    @operator('+')
     plus(other) {
         const values = [];
 
@@ -99,11 +101,16 @@ const context = {};
 
 console.log(code);
 
-// TODO: use 'require' pattern 
-const fn = Function('context', 'Tuple', code);
+const transformedCode = babel.transform('"use overloading";\n' + code, {
+    plugins: [plugin.default],
+    sourceMaps: false,
+}).code;
+
+console.log(transformedCode);
+
+// TODO: use 'require' pattern
+const fn = Function('context', 'Tuple', transformedCode);
 
 fn(context, Tuple);
 
 console.log(context);
-
-console.log(`${context.a.plus(context.b)}`);
